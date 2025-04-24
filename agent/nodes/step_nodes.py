@@ -4,8 +4,8 @@ from agent.states.step_state import StepState
 from agent.prompts.step_prompts import (
     get_technical_agent_template,
     get_feedback_from_response_template,
+    get_feedback_summarizer_template
 )
-from langgraph.graph import END
 from langgraph.types import interrupt
 import time
 
@@ -35,10 +35,8 @@ async def technical_agent(state: StepState):
         answer = interrupt({
             "question": response.next_steps.question,
         })
-        print(answer)
-        state["response"].append((response.next_steps.question, answer))
         return {
-            "response": state["response"]
+            "response": [(response.next_steps.question, answer)]
         }
     else:
         return {
@@ -48,10 +46,16 @@ async def technical_agent(state: StepState):
 async def feedback_from_response(state: StepState):
     response = await get_feedback_from_response_template().ainvoke(state)
     return {
-        "feedback": state["feedback"],
+        "feedback": [response.response],
+    }
+
+async def feedback_summarizer(state: StepState):
+    response = await get_feedback_summarizer_template().ainvoke(state)
+    return {
+        "overall_feedback": [(state["plan"].steps[0], response.response)],
     }
 
 def finish_step(state: StepState):
     if "step_completed" in state and state["step_completed"]:
-        return END
+        return "feedback_summarizer"
     return "technical_agent"

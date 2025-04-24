@@ -1,5 +1,6 @@
 from typing_extensions import TypedDict
-from typing import List, Tuple
+from typing import List, Tuple, Annotated
+import operator
 from agent.models.plan import Plan
 from agent.models.step import Step
 from datetime import datetime
@@ -15,5 +16,5 @@ class InterviewState(TypedDict):
     plan: Plan
     interview_completed: bool
     final_report: str
-    executed_steps: List[Tuple[Step, str]] = field(default_factory=list)
-    feedback: List[str] = field(default_factory=list)
+    executed_steps: Annotated[List[Tuple[Step, str]], operator.add]
+    overall_feedback: Annotated[List[Tuple[Plan, str]], operator.add]

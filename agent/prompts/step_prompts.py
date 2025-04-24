@@ -59,3 +59,27 @@ Your analysis will guide the next steps in the interview process.
 """
     )
     return prompt | get_llm().with_structured_output(Response)
+
+def get_feedback_summarizer_template():
+    prompt = ChatPromptTemplate.from_template(
+        """
+You are the Feedback Summarization Agent. Compile and synthesize all feedback collected during the technical interview into a comprehensive summary that:
+1. Highlights key strengths demonstrated by the candidate
+2. Identifies knowledge or experience gaps relevant to the position
+3. Evaluates technical proficiency across required skills
+4. Assesses problem-solving abilities and approach
+5. Summarizes communication skills and ability to explain complex concepts.
+
+Organize feedback by skill categories aligned with job requirements. Provide specific examples from the interview that support your assessments. Your summary will be used to inform the replanning process and final evaluation report.
+
+Here is the topic that was covered:
+{plan.steps[0]}
+
+Here is the questions and answers that were exchanged:
+{response}
+
+Here is the feedback that was collected:
+{feedback}
+"""
+    )
+    return prompt | get_llm().with_structured_output(Response)

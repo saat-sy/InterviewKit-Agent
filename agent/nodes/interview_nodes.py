@@ -4,7 +4,6 @@ from agent.prompts.interview_prompts import (
     get_process_resume_template,
     get_planner_template,
     get_replanner_template,
-    get_feedback_summarizer_template,
     get_final_report_generator_template,
 )
 
@@ -30,12 +29,6 @@ async def replanner(state: InterviewState):
         return {
             "plan": next_step
         }
-
-async def feedback_summarizer(state: InterviewState):
-    feedback = await get_feedback_summarizer_template().ainvoke(state)
-    return {
-        "feedback": state["feedback"] + feedback,
-    }
 
 async def final_report_generator(state: InterviewState):
     final_report = await get_final_report_generator_template().ainvoke(state)

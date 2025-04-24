@@ -1,5 +1,6 @@
 from typing_extensions import TypedDict
-from typing import List, Tuple
+from typing import List, Tuple, Annotated
+import operator
 from agent.models.plan import Plan
 from agent.models.step import Step
 from datetime import datetime
@@ -11,6 +12,7 @@ class StepState(TypedDict):
     step_start_time: datetime
     step_completed: bool
     duration: int
-    executed_steps: List[Tuple[Step, str]] = field(default_factory=list)
-    feedback: List[str] = field(default_factory=list)
-    response: List[Tuple[str, str]] = field(default_factory=list)
+    executed_steps: Annotated[List[Tuple[Step, str]], operator.add]
+    feedback: Annotated[List[str], operator.add]
+    response: Annotated[List[Tuple[str, str]], operator.add]
+    overall_feedback: Annotated[List[Tuple[Plan, str]], operator.add]
