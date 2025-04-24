@@ -9,6 +9,7 @@ from agent.prompts.interview_prompts import (
 )
 
 async def process_resume(state: InterviewState):
+    print(state)
     processed_resume = await get_process_resume_template().ainvoke(state)
     return {
         "processed_resume": processed_resume

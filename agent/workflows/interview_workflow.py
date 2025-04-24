@@ -11,35 +11,33 @@ from agent.nodes.interview_nodes import (
 
 from agent.workflows.step_workflow import interview_step_workflow
 
-def get_main_interview_workflow() -> StateGraph:
-    workflow = StateGraph(InterviewState)
+from dotenv import load_dotenv
 
-    subgraph = interview_step_workflow()
+load_dotenv()
 
-    workflow.add_node(process_resume)
-    workflow.add_node(planner)
-    workflow.add_node(replanner)
-    workflow.add_node(feedback_summarizer)
-    workflow.add_node(final_report_generator)
-    workflow.add_node("subgraph", subgraph)
+workflow = StateGraph(InterviewState)
 
-    workflow.add_edge(START, process_resume.__name__)
-    workflow.add_edge(process_resume.__name__, planner.__name__)
-    workflow.add_edge(pla
-    , "subgraph")
-    workflow.add_edge("subgraph", feedback_summarizer.__name__)
-    workflow.add_edge(feedback_summarizer.__name__, replanner.__name__)
-    workflow.add_conditional_edges(
-        replanner.__name__,
-        finish_interview,
-        ["subgraph", final_report_generator.__name__],
-    )
-    workflow.add_edge(final_report_generator.__name__, END)
+subgraph = interview_step_workflow()
 
-    workflow = workflow.compile()
+workflow.add_node(process_resume)
+workflow.add_node(planner)
+workflow.add_node(replanner)
+workflow.add_node(feedback_summarizer)
+workflow.add_node(final_report_generator)
+workflow.add_node("subgraph", subgraph)
 
-    return workflow
+workflow.add_edge(START, process_resume.__name__)
+workflow.add_edge(process_resume.__name__, planner.__name__)
+workflow.add_edge(planner.__name__, "subgraph")
+workflow.add_edge("subgraph", feedback_summarizer.__name__)
+workflow.add_edge(feedback_summarizer.__name__, replanner.__name__)
+workflow.add_conditional_edges(
+    replanner.__name__,
+    finish_interview,
+    ["subgraph", final_report_generator.__name__],
+)
+workflow.add_edge(final_report_generator.__name__, END)
 
-if __name__ == "__main__":
-    workflow = get_main_interview_workflow()
-    print(workflow.get_graph(xray=True).draw_mermaid())
+graph = workflow.compile()
+
+print(graph.get_graph(xray=True).draw_mermaid())

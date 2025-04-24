@@ -1,0 +1,7 @@
+{
+    "dependencies": ["./agent"],
+    "graphs": {
+      "agent": "./agent/workflows/interview_workflow.py:graph"
+    },
+    "env": ".env"
+  }
