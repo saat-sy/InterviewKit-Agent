@@ -9,7 +9,7 @@ from agent.nodes.interview_nodes import (
     finish_interview
 )
 
-from agent.workflows.interview_step_workflow import interview_step_workflow
+from agent.workflows.step_workflow import interview_step_workflow
 
 def get_main_interview_workflow() -> StateGraph:
     workflow = StateGraph(InterviewState)
@@ -25,7 +25,8 @@ def get_main_interview_workflow() -> StateGraph:
 
     workflow.add_edge(START, process_resume.__name__)
     workflow.add_edge(process_resume.__name__, planner.__name__)
-    workflow.add_edge(planner.__name__, "subgraph")
+    workflow.add_edge(pla
+    , "subgraph")
     workflow.add_edge("subgraph", feedback_summarizer.__name__)
     workflow.add_edge(feedback_summarizer.__name__, replanner.__name__)
     workflow.add_conditional_edges(

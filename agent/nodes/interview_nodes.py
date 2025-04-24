@@ -1,38 +1,50 @@
+from agent.models.replan import Replan
 from agent.states.interview_state import InterviewState
-from agent.workflows.interview_step_workflow import interview_step_workflow
+from agent.prompts.interview_prompts import (
+    get_process_resume_template,
+    get_planner_template,
+    get_replanner_template,
+    get_feedback_summarizer_template,
+    get_final_report_generator_template,
+)
 
 async def process_resume(state: InterviewState):
+    processed_resume = await get_process_resume_template().ainvoke(state)
     return {
-        "raw_resume": "",
-        "raw_job_description": "",
-        "processed_resume": ""
+        "processed_resume": processed_resume
     }
 
 async def planner(state: InterviewState):
+    plan = await get_planner_template().ainvoke(state)
     return {
-        "plan": None
+        "plan": plan
     }
 
 async def replanner(state: InterviewState):
-    return {
-        "plan": None
-    }
+    next_step = await get_replanner_template().with_structured_output(Replan).ainvoke(state)
+    if isinstance(next_step, bool):
+        return {
+            "interview_completed": next_step
+        }
+    else:
+        return {
+            "plan": next_step
+        }
 
 async def feedback_summarizer(state: InterviewState):
+    feedback = await get_feedback_summarizer_template().ainvoke(state)
     return {
-        "feedback": state["feedback"] + ""
+        "feedback": state["feedback"] + feedback,
     }
 
 async def final_report_generator(state: InterviewState):
+    final_report = await get_final_report_generator_template().ainvoke(state)
     return {
-        "final_report": ""
-    }
-
-async def call_technical_interview(state: InterviewState):
-    response = await interview_step_workflow().invoke()
-    return {
-        "feedback": ""
+        "final_report": final_report
     }
 
 def finish_interview(state: InterviewState):
-    return "final_report_generator"
+    if "interview_completed" in state and state["interview_completed"]:
+        return "final_report_generator"
+    # TODO: Use constants
+    return "subgraph"
