@@ -6,12 +6,14 @@ from agent.models.step import Step
 from datetime import datetime
 from dataclasses import dataclass, field
 
+
 @dataclass
 class StepState(TypedDict):
     plan: Plan
     step_start_time: datetime
     step_completed: bool
     duration: int
+    processed_resume: str
     executed_steps: Annotated[List[Tuple[Step, str]], operator.add]
     feedback: Annotated[List[str], operator.add]
     response: Annotated[List[Tuple[str, str]], operator.add]

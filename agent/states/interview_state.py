@@ -6,6 +6,7 @@ from agent.models.step import Step
 from datetime import datetime
 from dataclasses import dataclass, field
 
+
 @dataclass
 class InterviewState(TypedDict):
     raw_resume: str

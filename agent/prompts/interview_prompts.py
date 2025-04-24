@@ -1,6 +1,8 @@
 from langchain_core.prompts import ChatPromptTemplate
 from agent.models.plan import Plan
+from agent.models.replan import Replan
 from agent.utils.llm_provider import get_llm
+
 
 def get_process_resume_template():
     prompt = ChatPromptTemplate.from_template(
@@ -23,6 +25,7 @@ Job Description:
     )
     return prompt | get_llm()
 
+
 def get_planner_template():
     prompt = ChatPromptTemplate.from_template(
         """
@@ -43,33 +46,79 @@ The total duration of the interview has to be {duration} minutes. So make sure t
     )
     return prompt | get_llm().with_structured_output(Plan)
 
+
 def get_replanner_template():
     prompt = ChatPromptTemplate.from_template(
         """
-You are the Interview Replanning Agent. Based on the feedback summary and interview progress:
+# INTERVIEW REPLANNING AGENT
 
-1. Identify areas that require deeper exploration
-2. Determine if initial assumptions about candidate strengths/weaknesses were accurate
-3. Adjust the remaining interview focus to address gaps in evaluation
-4. Prioritize follow-up questions for the next interview segment
-5. Decide if specialized technical assessments are needed
+You are the Interview Replanning Agent. Your job is to evaluate the current progress of the interview and intelligently adjust the remaining plan to ensure complete, balanced, and meaningful assessment of the candidate.
 
-These are the original steps planned:
+## YOUR TASKS
+Analyze the following:
+1. Which topics or skills are underexplored or missing entirely
+2. Whether the initial assumptions about the candidate\'s strengths and weaknesses still hold
+3. What follow-up areas or deeper questions are necessary
+4. If any specialized assessments (e.g. system design, debugging) are now essential
+5. How much interview time remains, and how it should be best used
+
+---
+
+## INPUT CONTEXT
+
+- **Original Interview Plan**:  
 {plan}
 
-These are the steps already executed:
+- **Steps Already Executed**:  
 {executed_steps}
 
-Feedback until this point: {feedback}
+- **Feedback Summary So Far**:  
+{overall_feedback}
 
-Create an updated interview plan that addresses any missing coverage of job requirements. If the interview is near completion, determine if sufficient information has been gathered for a comprehensive evaluation.
+- **Total duration of the interview**:
+{duration}
 
-Your output can either be a Plan if there are more steps left or a boolean indicating if the interview should be finished.
-If you want the interview to be over, set it to True.
-If there are more steps that you want to execute, use Plan.
+- **Time elapsed**:
+{elapsed_time}
+
+---
+
+## OUTPUT FORMAT
+
+You must return **one of two responses**:
+
+### ✅ OPTION 1: Continue Interview
+Clearly list:
+- The **revised plan** with updated step names, their purpose, and estimated durations.
+- Which previous gaps this new plan is addressing.
+- Why this adjusted plan is necessary based on the candidate's responses and feedback.
+
+*Example Output:*
+> Continue Interview.  
+> Remaining steps:  
+> 1. System Design Deep Dive (10 mins) – explore architectural reasoning and scalability decisions, not yet evaluated.  
+> 2. Debugging Scenario (5 mins) – candidate has mentioned debugging experience but hasn’t been probed in depth.  
+> These steps fill gaps in technical evaluation missed earlier.
+
+---
+
+### 🛑 OPTION 2: End Interview  
+If no significant value would come from continuing, say:
+> End Interview. All critical areas have been adequately explored.  
+> Feedback indicates we have enough information for a comprehensive evaluation.
+
+---
+
+## MANDATORY CHECKLIST BEFORE RESPONDING
+- Have all core competencies (technical depth, decision-making, communication, and relevant experience) been covered?
+- Would more questions **materially improve** the assessment?
+- Are you confident enough in the gathered data to **make a hiring decision**?
+
+Be decisive and focused. Only continue the interview if it will **add real insight**.
 """
     )
-    return prompt | get_llm()
+    return prompt | get_llm().with_structured_output(Replan)
+
 
 def get_final_report_generator_template():
     prompt = ChatPromptTemplate.from_template(

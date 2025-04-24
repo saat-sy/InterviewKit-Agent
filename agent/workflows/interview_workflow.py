@@ -5,7 +5,7 @@ from agent.nodes.interview_nodes import (
     planner,
     replanner,
     final_report_generator,
-    finish_interview
+    finish_interview,
 )
 
 from agent.workflows.step_workflow import interview_step_workflow
