@@ -3,7 +3,9 @@ from typing import List, Tuple
 from agent.models.plan import Plan
 from agent.models.step import Step
 from datetime import datetime
+from dataclasses import dataclass, field
 
+@dataclass
 class InterviewState(TypedDict):
     raw_resume: str
     raw_job_description: str
@@ -11,7 +13,7 @@ class InterviewState(TypedDict):
     duration: int
     interview_start_time: datetime
     plan: Plan
-    executed_steps: List[Tuple[Step, str]]
-    feedback: List[str]
     interview_completed: bool
     final_report: str
+    executed_steps: List[Tuple[Step, str]] = field(default_factory=list)
+    feedback: List[str] = field(default_factory=list)

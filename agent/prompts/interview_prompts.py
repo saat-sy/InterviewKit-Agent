@@ -37,6 +37,8 @@ Your plan should include specific areas to probe based on potential gaps or stre
 
 Processed Resume:
 {processed_resume}
+
+The total duration of the interview has to be {duration} minutes. So make sure the total time of the plan is equal to that.
 """
     )
     return prompt | get_llm().with_structured_output(Plan)

@@ -1,6 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate
 from agent.models.technical_agent_response import TechnicalAgentResponse
 from agent.utils.llm_provider import get_llm
+from agent.models.response import Response
 
 def get_technical_agent_template():
     prompt = ChatPromptTemplate.from_template(
@@ -15,7 +16,7 @@ This is the scheduled plan for the interview:
 Here's a list of all steps that are covered:
 {executed_steps}
 
-Your task is to base this session around topic {1} {current_plan_name} {current_plan_description}.
+Your task is to base this session around topic 1. {current_plan_name} {current_plan_description}.
 
 For this session, the time dedicated to this topic is {current_plan_duration}.
 
@@ -57,4 +58,4 @@ For each response, provide structured feedback including:
 Your analysis will guide the next steps in the interview process.
 """
     )
-    return prompt | get_llm()
+    return prompt | get_llm().with_structured_output(Response)

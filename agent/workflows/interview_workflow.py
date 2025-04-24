@@ -10,7 +10,6 @@ from agent.nodes.interview_nodes import (
 )
 
 from agent.workflows.step_workflow import interview_step_workflow
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -39,5 +38,3 @@ workflow.add_conditional_edges(
 workflow.add_edge(final_report_generator.__name__, END)
 
 graph = workflow.compile()
-
-print(graph.get_graph(xray=True).draw_mermaid())
