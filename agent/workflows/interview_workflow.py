@@ -13,25 +13,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-workflow = StateGraph(InterviewState)
+def get_interview_workflow() -> StateGraph:
+    workflow = StateGraph(InterviewState)
 
-subgraph = interview_step_workflow()
+    subgraph = interview_step_workflow()
 
-workflow.add_node(process_resume)
-workflow.add_node(planner)
-workflow.add_node(replanner)
-workflow.add_node(final_report_generator)
-workflow.add_node("subgraph", subgraph)
+    workflow.add_node(process_resume)
+    workflow.add_node(planner)
+    workflow.add_node(replanner)
+    workflow.add_node(final_report_generator)
+    workflow.add_node("subgraph", subgraph)
 
-workflow.add_edge(START, process_resume.__name__)
-workflow.add_edge(process_resume.__name__, planner.__name__)
-workflow.add_edge(planner.__name__, "subgraph")
-workflow.add_edge("subgraph", replanner.__name__)
-workflow.add_conditional_edges(
-    replanner.__name__,
-    finish_interview,
-    ["subgraph", final_report_generator.__name__],
-)
-workflow.add_edge(final_report_generator.__name__, END)
+    workflow.add_edge(START, process_resume.__name__)
+    workflow.add_edge(process_resume.__name__, planner.__name__)
+    workflow.add_edge(planner.__name__, "subgraph")
+    workflow.add_edge("subgraph", replanner.__name__)
+    workflow.add_conditional_edges(
+        replanner.__name__,
+        finish_interview,
+        ["subgraph", final_report_generator.__name__],
+    )
+    workflow.add_edge(final_report_generator.__name__, END)
 
-graph = workflow.compile()
+    graph = workflow.compile()
+
+    return graph
