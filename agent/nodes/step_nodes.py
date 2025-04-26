@@ -40,11 +40,7 @@ async def technical_agent(state: StepState):
     )
     print(response)
     if response.continue_interview:
-        answer = interrupt(
-            {
-                "question": response.question,
-            }
-        )
+        answer = interrupt(response.question)
         return {"response": [(response.question, answer)]}
     else:
         return {

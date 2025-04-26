@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class FlushSentinel(str, SynthesizeStream._FlushSentinel):
-    def __new__(cls, *args, **kwargs):
-        return super().__new__(cls, *args, **kwargs)
+    def __new__(self, *args, **kwargs):
+        return super().__new__(self, *args, **kwargs)
 
 
 class LangGraphStream(llm.LLMStream):
@@ -25,11 +25,16 @@ class LangGraphStream(llm.LLMStream):
         llm: llm.LLM,
         chat_ctx: llm.ChatContext,
         graph: PregelProtocol,
+        initial_information: dict[str, str],
+        initial_information_passed: bool = False,
         tools: list[llm.FunctionTool] = None,
         conn_options: APIConnectOptions = None,
     ):
         super().__init__(llm, chat_ctx=chat_ctx, tools=tools, conn_options=conn_options)
         self._graph = graph
+        self.initial_information = initial_information
+        self.initial_information_passed = initial_information_passed
+
 
     async def _run(self):
         # Change 1) Instead of converting all messages, we just now take the last human message
@@ -43,46 +48,53 @@ class LangGraphStream(llm.LLMStream):
         )
 
         messages = [input_human_message] if input_human_message else []
-        input = {"messages": messages}
+        if not self.initial_information_passed:
+            inp = {**self.initial_information, "messages": messages}
+            self.initial_information_passed = True
+        else:
+            inp = {"messages": messages}
 
-        # see if we need to respond to an interrupt
-        if interrupt := await self._get_interrupt():
+        interrupt = await self._get_interrupt()
+        if interrupt:
             used_messages = [
-                AIMessage(interrupt.value),
+            AIMessage(interrupt.value),
                 input_human_message,
             ]
-
-            input = Command(resume=(input_human_message.content, used_messages))
+            inp = Command(resume=(input_human_message.content, used_messages))
 
         try:
             async for mode, data in self._graph.astream(
-                input, config=self._llm._config, stream_mode=["messages", "custom"]
+                inp, config=self._llm._config, stream_mode=["messages", "custom"]
             ):
-                if mode == "messages":
-                    if chunk := await self._to_livekit_chunk(data[0]):
-                        self._event_ch.send_nowait(chunk)
-
-                if mode == "custom":
-                    if isinstance(data, dict) and (event := data.get("type")):
-                        if event == "say" or event == "flush":
-                            content = (data.get("data") or {}).get("content")
-                            if chunk := await self._to_livekit_chunk(content):
+                if mode in ["messages", "custom"]:
+                    if mode == "messages":
+                        # Collect the chunk but do not send it unless it's an interrupt
+                        if chunk := await self._to_livekit_chunk(data[0]):
+                            if interrupt:
                                 self._event_ch.send_nowait(chunk)
 
-                            self._event_ch.send_nowait(
-                                self._create_livekit_chunk(FlushSentinel())
-                            )
+                    if mode == "custom":
+                        if isinstance(data, dict) and (event := data.get("type")):
+                            if event in ["say", "flush"]:
+                                content = (data.get("data") or {}).get("content")
+                                if chunk := await self._to_livekit_chunk(content):
+                                    if interrupt:
+                                        self._event_ch.send_nowait(chunk)
+
+                                if interrupt:
+                                    self._event_ch.send_nowait(
+                                        self._create_livekit_chunk(FlushSentinel())
+                                    )
         except GraphInterrupt:
             pass
 
-        # If interrupted, send the string as a message
         if interrupt := await self._get_interrupt():
             if chunk := await self._to_livekit_chunk(interrupt.value):
                 self._event_ch.send_nowait(chunk)
 
-    async def _get_interrupt(cls) -> Optional[str]:
+    async def _get_interrupt(self) -> Optional[str]:
         try:
-            state = await cls._graph.aget_state(config=cls._llm._config)
+            state = await self._graph.aget_state(config=self._llm._config)
             interrupts = [
                 interrupt for task in state.tasks for interrupt in task.interrupts
             ]
@@ -95,10 +107,10 @@ class LangGraphStream(llm.LLMStream):
                 None,
             )
             return assistant
-        except HTTPStatusError as e:
+        except:
             return None
 
-    def _to_message(cls, msg: llm.ChatMessage) -> HumanMessage:
+    def _to_message(self, msg: llm.ChatMessage) -> HumanMessage:
         if isinstance(msg.content, str):
             content = msg.content
         elif isinstance(msg.content, list):
@@ -106,11 +118,6 @@ class LangGraphStream(llm.LLMStream):
             for c in msg.content:
                 if isinstance(c, str):
                     content.append({"type": "text", "text": c})
-                elif isinstance(c, llm.ChatImage):
-                    if isinstance(c.image, str):
-                        content.append({"type": "image_url", "image_url": c.image})
-                    else:
-                        logger.warning("Unsupported image type")
                 else:
                     logger.warning("Unsupported content type")
         else:
@@ -154,10 +161,12 @@ class LangGraphStream(llm.LLMStream):
 class LangGraphAdapter(llm.LLM):
     def __init__(self, 
                  graph: Any, 
+                 initial_information: dict["str", "str"],
                  config: dict[str, Any] | None = None,):
         super().__init__()
         self._graph = graph
         self._config = config
+        self._initial_information = initial_information
 
     def chat(
         self,
@@ -172,4 +181,5 @@ class LangGraphAdapter(llm.LLM):
             graph=self._graph,
             tools=tools,
             conn_options=conn_options,
+            initial_information=self._initial_information,
         )
