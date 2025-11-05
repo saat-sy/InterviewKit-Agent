@@ -1,5 +1,5 @@
 # Remove LiveKit Integration files from this repositrory. Create a separate repo for it (decision pending)
-livekit_config/
+# livekit_config/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
